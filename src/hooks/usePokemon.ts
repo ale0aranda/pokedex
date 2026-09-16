@@ -6,8 +6,10 @@ export function usePokemon(gen: string) {
 
 	const [loadingGens, setLoadingGens] = useState<Set<number>>(new Set());
 
-	const gensToLoad =
-		gen === "" ? Object.keys(GEN_RANGES).map(Number) : [Number(gen)];
+	const gensToLoad = useMemo(
+		() => (gen === "" ? Object.keys(GEN_RANGES).map(Number) : [Number(gen)]),
+		[gen],
+	);
 
 	useEffect(() => {
 		const missing = gensToLoad.filter((g) => !cache[g] && !loadingGens.has(g));
@@ -32,11 +34,11 @@ export function usePokemon(gen: string) {
 				});
 			});
 		});
-	}, [gen]);
+	}, [cache, gensToLoad, loadingGens]);
 
 	const pokemon = useMemo(() => {
 		return gensToLoad.flatMap((g) => cache[g] ?? []);
-	}, [cache, gen]);
+	}, [cache, gensToLoad]);
 
 	const loading = gensToLoad.some((g) => !cache[g]);
 

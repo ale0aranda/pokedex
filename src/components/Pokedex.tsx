@@ -1,16 +1,20 @@
 import { useState } from "react";
-import { GEN_RANGES, SORT_OPTIONS, type SortKey } from "../lib/pokemon";
 import { usePokemon } from "../hooks/usePokemon";
 import {
-	usePokemonFilters,
 	type SortDirection,
+	usePokemonFilters,
 } from "../hooks/usePokemonFilters";
+import {
+	ALL_TYPES,
+	GEN_RANGES,
+	SORT_OPTIONS,
+	type SortKey,
+} from "../lib/pokemon";
 import { PokemonCard } from "./pokemon/PokemonCard";
-import { FilterDropdown } from "./ui/FilterDropdown";
-import { SearchBar } from "./ui/SearchBar";
-import { LoadingState } from "./ui/LoadingState";
 import { EmptyState } from "./ui/EmptyState";
-import { ALL_TYPES } from "../lib/pokemon";
+import { FilterDropdown } from "./ui/FilterDropdown";
+import { LoadingState } from "./ui/LoadingState";
+import { SearchBar } from "./ui/SearchBar";
 
 export default function Pokedex() {
 	const [gen, setGen] = useState("");

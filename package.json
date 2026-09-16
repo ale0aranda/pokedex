@@ -9,7 +9,10 @@
 		"dev": "astro dev",
 		"build": "astro build",
 		"preview": "astro preview",
-		"astro": "astro"
+		"astro": "astro",
+		"check": "biome check . && tsc --noEmit",
+		"format": "biome format --write .",
+		"prepare": "husky"
 	},
 	"dependencies": {
 		"@astrojs/react": "^5.0.7",
@@ -23,6 +26,10 @@
 		"typescript": "^6.0.3"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.5.0"
+		"@ale0aranda/rules": "^0.6.2",
+		"@biomejs/biome": "2.5.13",
+		"@commitlint/cli": "^21.2.2",
+		"husky": "^9.1.7",
+		"lint-staged": "^16.4.0"
 	}
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type CSSProperties, useState } from "react";
 import type { Pokemon } from "../../lib/pokemon";
 import { PokemonModal } from "./PokemonModal";
 
@@ -11,12 +11,15 @@ export function PokemonCard({ p }: Props) {
 	const num = String(p.id).padStart(3, "0");
 	const sprite = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.id}.png`;
 	const primary = p.types[0];
+	const cardStyle: CSSProperties & Record<"--pk-color", string> = {
+		"--pk-color": `var(--type-${primary})`,
+	};
 
 	return (
 		<>
 			<article
 				className="flex cursor-pointer overflow-hidden rounded-lg border border-zinc-200 bg-white transition hover:-translate-y-0.5 hover:border-zinc-300 sm:flex-col"
-				style={{ ["--pk-color" as any]: `var(--type-${primary})` }}
+				style={cardStyle}
 				onClick={() => setOpen(true)}
 			>
 				<div className="w-1 shrink-0 bg-(--pk-color) sm:h-1 sm:w-auto" />

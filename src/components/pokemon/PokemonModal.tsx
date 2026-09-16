@@ -93,8 +93,12 @@ function computeWeakStrong(types: string[]) {
 	const weakSet = new Set<string>();
 	const strongSet = new Set<string>();
 	for (const t of types) {
-		TYPE_CHART[t]?.weak.forEach((w) => weakSet.add(w));
-		TYPE_CHART[t]?.strong.forEach((s) => strongSet.add(s));
+		TYPE_CHART[t]?.weak.forEach((w) => {
+			weakSet.add(w);
+		});
+		TYPE_CHART[t]?.strong.forEach((s) => {
+			strongSet.add(s);
+		});
 	}
 	weakSet.forEach((w) => {
 		if (strongSet.has(w)) {
@@ -116,7 +120,7 @@ export function PokemonModal({ pokemon, onClose }: Props) {
 		fetchEvolutionChain(pokemon.id)
 			.then(setEvoChain)
 			.finally(() => setEvoLoading(false));
-	}, [pokemon?.id]);
+	}, [pokemon]);
 
 	if (!pokemon) return null;
 
