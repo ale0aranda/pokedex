@@ -1,30 +1,32 @@
 import { useState } from "react";
-import { usePokemon } from "../hooks/usePokemon";
+
+import { usePokemon } from "@/features/pokedex/hooks/usePokemon";
 import {
 	type SortDirection,
 	usePokemonFilters,
-} from "../hooks/usePokemonFilters";
+} from "@/features/pokedex/hooks/usePokemonFilters";
+import type { PokemonType, SortKey } from "@/features/pokedex/types/pokedex";
 import {
 	ALL_TYPES,
 	GEN_RANGES,
 	SORT_OPTIONS,
-	type SortKey,
-} from "../lib/pokemon";
-import { PokemonCard } from "./pokemon/PokemonCard";
-import { EmptyState } from "./ui/EmptyState";
-import { FilterDropdown } from "./ui/FilterDropdown";
-import { LoadingState } from "./ui/LoadingState";
-import { SearchBar } from "./ui/SearchBar";
+} from "@/shared/lib/pokemon/constants";
+import { PokemonCard } from "@/features/pokedex/components/PokemonCard";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { FilterDropdown } from "@/components/ui/FilterDropdown";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { SearchBar } from "@/components/ui/SearchBar";
 
 export default function Pokedex() {
 	const [gen, setGen] = useState("");
 	const [query, setQuery] = useState("");
-	const [typeFilter, setTypeFilter] = useState("");
+	const [typeFilter, setTypeFilter] = useState<PokemonType | "">("");
 	const [sortKey, setSortKey] = useState<SortKey>("id");
 	const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 	const [shuffleSeed, setShuffleSeed] = useState(0);
 
 	const { pokemon: allPokemon, loading: isLoading } = usePokemon(gen);
+
 	const filtered = usePokemonFilters(
 		allPokemon,
 		query,
@@ -36,9 +38,9 @@ export default function Pokedex() {
 
 	const typeColor = typeFilter ? `var(--type-${typeFilter})` : undefined;
 
-	const genOptions = Object.keys(GEN_RANGES).map((g) => ({
-		value: g,
-		label: `Gen ${g}`,
+	const genOptions = Object.keys(GEN_RANGES).map((generation) => ({
+		value: generation,
+		label: `Gen ${generation}`,
 	}));
 
 	const typeOptions = ALL_TYPES.map((type) => ({
@@ -46,10 +48,28 @@ export default function Pokedex() {
 		label: type,
 	}));
 
-	const sortOptions = SORT_OPTIONS.filter((o) => o.value !== "id").map((o) => ({
-		value: o.value,
-		label: o.label,
+	const sortOptions = SORT_OPTIONS.filter(
+		(option) => option.value !== "id",
+	).map((option) => ({
+		value: option.value,
+		label: option.label,
 	}));
+
+	const hasFilters =
+		gen !== "" ||
+		query !== "" ||
+		typeFilter !== "" ||
+		sortKey !== "id" ||
+		shuffleSeed !== 0;
+
+	const clearFilters = () => {
+		setGen("");
+		setQuery("");
+		setTypeFilter("");
+		setSortKey("id");
+		setSortDirection("asc");
+		setShuffleSeed(0);
+	};
 
 	return (
 		<div>
@@ -67,7 +87,7 @@ export default function Pokedex() {
 					label="Type"
 					value={typeFilter}
 					options={typeOptions}
-					onChange={setTypeFilter}
+					onChange={(value) => setTypeFilter(value as PokemonType | "")}
 					color={typeColor}
 					showTypeIcons
 				/>
@@ -76,15 +96,18 @@ export default function Pokedex() {
 					label="Sort"
 					value={sortKey === "id" ? "" : sortKey}
 					options={sortOptions}
-					onChange={(v) => {
-						setSortKey((v || "id") as SortKey);
+					onChange={(value) => {
+						setSortKey((value || "id") as SortKey);
 						setShuffleSeed(0);
 					}}
 				/>
 
 				<button
+					type="button"
 					onClick={() =>
-						setSortDirection((d) => (d === "asc" ? "desc" : "asc"))
+						setSortDirection((direction) =>
+							direction === "asc" ? "desc" : "asc",
+						)
 					}
 					aria-label="Toggle sort direction"
 					title={sortDirection === "asc" ? "Ascending" : "Descending"}
@@ -98,6 +121,7 @@ export default function Pokedex() {
 						className={`transition-transform ${
 							sortDirection === "desc" ? "rotate-180" : ""
 						}`}
+						aria-hidden="true"
 					>
 						<path
 							d="M6 2V10M6 2L3 5M6 2L9 5"
@@ -110,6 +134,7 @@ export default function Pokedex() {
 				</button>
 
 				<button
+					type="button"
 					onClick={() =>
 						setShuffleSeed(Math.floor(Math.random() * 1_000_000) + 1)
 					}
@@ -121,7 +146,13 @@ export default function Pokedex() {
 							: "border-zinc-200 bg-white text-zinc-400 hover:border-zinc-300 hover:text-zinc-600"
 					}`}
 				>
-					<svg width="9" height="9" viewBox="0 0 12 12" fill="none">
+					<svg
+						width="9"
+						height="9"
+						viewBox="0 0 12 12"
+						fill="none"
+						aria-hidden="true"
+					>
 						<rect
 							x="1.5"
 							y="1.5"
@@ -139,20 +170,10 @@ export default function Pokedex() {
 					</svg>
 				</button>
 
-				{(gen ||
-					query ||
-					typeFilter ||
-					sortKey !== "id" ||
-					shuffleSeed !== 0) && (
+				{hasFilters && (
 					<button
-						onClick={() => {
-							setGen("");
-							setQuery("");
-							setTypeFilter("");
-							setSortKey("id");
-							setSortDirection("asc");
-							setShuffleSeed(0);
-						}}
+						type="button"
+						onClick={clearFilters}
 						className="rounded-lg border border-zinc-200 bg-white px-3 py-2 font-pokemon text-[7px] text-zinc-400 transition hover:border-zinc-300 hover:text-zinc-600"
 					>
 						clear ✕
@@ -172,8 +193,8 @@ export default function Pokedex() {
 				<EmptyState />
 			) : (
 				<div className="flex flex-col gap-2 sm:grid sm:grid-cols-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-					{filtered.map((p) => (
-						<PokemonCard key={p.id} p={p} />
+					{filtered.map((pokemon) => (
+						<PokemonCard key={pokemon.id} p={pokemon} />
 					))}
 				</div>
 			)}

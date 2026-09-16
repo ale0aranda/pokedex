@@ -1,6 +1,6 @@
 ---
-import Pokedex from "../components/Pokedex";
-import "../global.css";
+import Pokedex from "@/features/pokedex/components/Pokedex";
+import "@/global.css";
 ---
 
 <html lang="en">
@@ -8,7 +8,11 @@ import "../global.css";
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>Pokédex</title>
-		<link rel="icon" type="image/x-icon" href="/public/favicon.ico" />
+		<link
+			rel="icon"
+			type="image/x-icon"
+			href={`${import.meta.env.BASE_URL}favicon.ico`}
+		/>
 	</head>
 	<body>
 		<main class="mx-auto max-w-6xl px-4 py-6 sm:px-5 sm:py-8">

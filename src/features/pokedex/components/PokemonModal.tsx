@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
-import type { Pokemon } from "../../lib/pokemon";
+
+import { fetchEvolutionChain } from "@/shared/lib/pokemon/api";
+import {
+	getPokemonArtworkUrl,
+	getPokemonSpriteUrl,
+} from "@/shared/lib/pokemon/assets";
+import { getTypeEffectiveness } from "@/shared/lib/pokemon/type-chart";
+import { MAX_BASE_STAT } from "@/shared/lib/pokemon/constants";
+import type { Pokemon } from "@/shared/lib/pokemon/types";
+import { STAT_CONFIG } from "@/features/pokedex/lib/stats";
 
 type Props = {
 	pokemon: Pokemon | null;
@@ -8,132 +17,77 @@ type Props = {
 
 const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"];
 
-const TYPE_CHART: Record<string, { weak: string[]; strong: string[] }> = {
-	fire: {
-		weak: ["water", "rock", "ground"],
-		strong: ["grass", "ice", "bug", "steel"],
-	},
-	water: { weak: ["electric", "grass"], strong: ["fire", "rock", "ground"] },
-	grass: {
-		weak: ["fire", "ice", "poison", "flying", "bug"],
-		strong: ["water", "rock", "ground"],
-	},
-	electric: { weak: ["ground"], strong: ["water", "flying"] },
-	poison: { weak: ["ground", "psychic"], strong: ["grass", "fairy"] },
-	flying: {
-		weak: ["electric", "ice", "rock"],
-		strong: ["grass", "fighting", "bug"],
-	},
-	psychic: { weak: ["bug", "ghost", "dark"], strong: ["fighting", "poison"] },
-	dragon: { weak: ["ice", "dragon", "fairy"], strong: ["dragon"] },
-	normal: { weak: ["fighting"], strong: [] },
-	ice: {
-		weak: ["fire", "fighting", "rock", "steel"],
-		strong: ["grass", "ground", "flying", "dragon"],
-	},
-	rock: {
-		weak: ["water", "grass", "fighting", "ground", "steel"],
-		strong: ["fire", "ice", "flying", "bug"],
-	},
-	ghost: { weak: ["ghost", "dark"], strong: ["normal", "fighting"] },
-	bug: {
-		weak: ["fire", "flying", "rock"],
-		strong: ["grass", "psychic", "dark"],
-	},
-	fighting: {
-		weak: ["flying", "psychic", "fairy"],
-		strong: ["normal", "ice", "rock", "dark", "steel"],
-	},
-	steel: {
-		weak: ["fire", "fighting", "ground"],
-		strong: ["ice", "rock", "fairy"],
-	},
-	dark: { weak: ["fighting", "bug", "fairy"], strong: ["ghost", "psychic"] },
-	fairy: { weak: ["poison", "steel"], strong: ["fighting", "dragon", "dark"] },
-	ground: {
-		weak: ["water", "grass", "ice"],
-		strong: ["fire", "electric", "poison", "rock", "steel"],
-	},
-};
-
-const STAT_CONFIG = [
-	{ key: "hp", label: "HP" },
-	{ key: "attack", label: "ATK" },
-	{ key: "defense", label: "DEF" },
-	{ key: "specialAttack", label: "SP.ATK" },
-	{ key: "specialDefense", label: "SP.DEF" },
-	{ key: "speed", label: "SPD" },
-] as const;
-
-interface EvoNode {
-	id: number;
-	name: string;
-}
-
-async function fetchEvolutionChain(id: number): Promise<EvoNode[]> {
-	const speciesRes = await fetch(
-		`https://pokeapi.co/api/v2/pokemon-species/${id}`,
-	);
-	const species = await speciesRes.json();
-	const chainRes = await fetch(species.evolution_chain.url);
-	const chainData = await chainRes.json();
-
-	const chain: EvoNode[] = [];
-	let current = chainData.chain;
-	while (current) {
-		const urlParts = current.species.url.split("/").filter(Boolean);
-		const speciesId = Number(urlParts[urlParts.length - 1]);
-		chain.push({ id: speciesId, name: current.species.name });
-		current = current.evolves_to?.[0] ?? null;
-	}
-	return chain;
-}
-
-function computeWeakStrong(types: string[]) {
-	const weakSet = new Set<string>();
-	const strongSet = new Set<string>();
-	for (const t of types) {
-		TYPE_CHART[t]?.weak.forEach((w) => {
-			weakSet.add(w);
-		});
-		TYPE_CHART[t]?.strong.forEach((s) => {
-			strongSet.add(s);
-		});
-	}
-	weakSet.forEach((w) => {
-		if (strongSet.has(w)) {
-			weakSet.delete(w);
-			strongSet.delete(w);
-		}
-	});
-	return { weak: [...weakSet], strong: [...strongSet] };
-}
-
 export function PokemonModal({ pokemon, onClose }: Props) {
-	const [evoChain, setEvoChain] = useState<EvoNode[]>([]);
+	const [evoChain, setEvoChain] = useState<
+		Awaited<ReturnType<typeof fetchEvolutionChain>>
+	>([]);
 	const [evoLoading, setEvoLoading] = useState(false);
 
 	useEffect(() => {
-		if (!pokemon) return;
+		if (!pokemon) {
+			return;
+		}
+
+		let cancelled = false;
+
 		setEvoChain([]);
 		setEvoLoading(true);
+
 		fetchEvolutionChain(pokemon.id)
-			.then(setEvoChain)
-			.finally(() => setEvoLoading(false));
+			.then((chain) => {
+				if (!cancelled) {
+					setEvoChain(chain);
+				}
+			})
+			.catch(() => {
+				if (!cancelled) {
+					setEvoChain([]);
+				}
+			})
+			.finally(() => {
+				if (!cancelled) {
+					setEvoLoading(false);
+				}
+			});
+
+		return () => {
+			cancelled = true;
+		};
 	}, [pokemon]);
 
-	if (!pokemon) return null;
+	useEffect(() => {
+		if (!pokemon) {
+			return;
+		}
 
-	const num = String(pokemon.id).padStart(3, "0");
-	const artwork = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png`;
-	const primary = pokemon.types[0];
-	const typeColor = `var(--type-${primary})`;
-	const { weak, strong } = computeWeakStrong(pokemon.types);
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.key === "Escape") {
+				onClose();
+			}
+		};
+
+		document.addEventListener("keydown", handleKeyDown);
+
+		return () => {
+			document.removeEventListener("keydown", handleKeyDown);
+		};
+	}, [pokemon, onClose]);
+
+	if (!pokemon) {
+		return null;
+	}
+
+	const number = String(pokemon.id).padStart(3, "0");
+	const primaryType = pokemon.types[0];
+	const typeColor = `var(--type-${primaryType})`;
+	const artwork = getPokemonArtworkUrl(pokemon.id);
+	const { weak, strong } = getTypeEffectiveness(pokemon.types);
 
 	return (
 		<div
 			className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
 			onClick={onClose}
+			role="presentation"
 		>
 			<div
 				className="relative w-full overflow-hidden rounded-2xl"
@@ -143,15 +97,20 @@ export function PokemonModal({ pokemon, onClose }: Props) {
 					border: "0.5px solid var(--color-border-tertiary, #e5e5e5)",
 					boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
 				}}
-				onClick={(e) => e.stopPropagation()}
+				onClick={(event) => event.stopPropagation()}
+				role="dialog"
+				aria-modal="true"
+				aria-label={`${pokemon.name} details`}
 			>
 				<button
+					type="button"
 					onClick={onClose}
 					className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-full font-pokemon text-[10px] text-zinc-500 transition hover:bg-zinc-200"
 					style={{
 						background: "rgba(255,255,255,0.85)",
 						border: "0.5px solid rgba(0,0,0,0.08)",
 					}}
+					aria-label="Close"
 				>
 					✕
 				</button>
@@ -162,7 +121,7 @@ export function PokemonModal({ pokemon, onClose }: Props) {
 						style={{ width: "190px" }}
 					>
 						<span
-							className="font-pokemon pointer-events-none absolute select-none"
+							className="pointer-events-none absolute select-none font-pokemon"
 							style={{
 								right: "-10px",
 								bottom: "-16px",
@@ -172,7 +131,7 @@ export function PokemonModal({ pokemon, onClose }: Props) {
 								lineHeight: 1,
 							}}
 						>
-							{num}
+							{number}
 						</span>
 
 						<img
@@ -180,14 +139,16 @@ export function PokemonModal({ pokemon, onClose }: Props) {
 							alt={pokemon.name}
 							className="relative h-24 w-24"
 						/>
+
 						<span
 							className="font-pokemon text-[7px]"
 							style={{
 								color: `color-mix(in srgb, ${typeColor} 55%, transparent)`,
 							}}
 						>
-							#{num}
+							#{number}
 						</span>
+
 						<h2
 							className="font-pokemon capitalize"
 							style={{
@@ -198,23 +159,25 @@ export function PokemonModal({ pokemon, onClose }: Props) {
 						>
 							{pokemon.name}
 						</h2>
+
 						<div className="flex gap-1.5">
-							{pokemon.types.map((t) => (
+							{pokemon.types.map((type) => (
 								<span
-									key={t}
+									key={type}
 									className="font-pokemon capitalize text-white"
 									style={{
-										background: `var(--type-${t})`,
+										background: `var(--type-${type})`,
 										fontSize: "7px",
 										padding: "3px 9px",
 										borderRadius: "999px",
 									}}
 								>
-									{t}
+									{type}
 								</span>
 							))}
 						</div>
-						<div className="flex gap-3 mt-1">
+
+						<div className="mt-1 flex gap-3">
 							<span
 								className="font-pokemon text-[8px]"
 								style={{ color: typeColor }}
@@ -224,6 +187,7 @@ export function PokemonModal({ pokemon, onClose }: Props) {
 									hp
 								</span>
 							</span>
+
 							<span
 								className="font-pokemon text-[8px]"
 								style={{ color: typeColor }}
@@ -233,6 +197,7 @@ export function PokemonModal({ pokemon, onClose }: Props) {
 									ht
 								</span>
 							</span>
+
 							<span
 								className="font-pokemon text-[8px]"
 								style={{ color: typeColor }}
@@ -247,31 +212,39 @@ export function PokemonModal({ pokemon, onClose }: Props) {
 					</div>
 
 					<div
-						className="flex flex-1 flex-col"
+						className="flex min-w-0 flex-1 flex-col"
 						style={{
 							borderLeft: `0.5px solid color-mix(in srgb, ${typeColor} 20%, transparent)`,
-							minWidth: 0,
 						}}
 					>
 						<div className="p-4 pb-3">
 							<p
 								className="mb-2 font-pokemon text-zinc-400"
-								style={{ fontSize: "6px", letterSpacing: "0.1em" }}
+								style={{
+									fontSize: "6px",
+									letterSpacing: "0.1em",
+								}}
 							>
 								BASE STATS
 							</p>
+
 							<div className="flex flex-col gap-1.5">
 								{STAT_CONFIG.map(({ key, label }) => {
-									const value = pokemon[key] as number;
-									const pct = Math.round((value / 255) * 100);
+									const value = pokemon[key];
+									const percentage = Math.round((value / MAX_BASE_STAT) * 100);
+
 									return (
 										<div key={key} className="flex items-center gap-2">
 											<span
 												className="font-pokemon text-zinc-400"
-												style={{ fontSize: "6px", width: "44px" }}
+												style={{
+													fontSize: "6px",
+													width: "44px",
+												}}
 											>
 												{label}
 											</span>
+
 											<span
 												className="font-pokemon text-zinc-700"
 												style={{
@@ -282,14 +255,17 @@ export function PokemonModal({ pokemon, onClose }: Props) {
 											>
 												{value}
 											</span>
+
 											<div
 												className="flex-1 overflow-hidden rounded-full"
-												style={{ background: "rgba(0,0,0,0.07)" }}
+												style={{
+													background: "rgba(0,0,0,0.07)",
+												}}
 											>
 												<div
 													className="rounded-full"
 													style={{
-														width: `${pct}%`,
+														width: `${percentage}%`,
 														height: "5px",
 														background: typeColor,
 													}}
@@ -313,68 +289,29 @@ export function PokemonModal({ pokemon, onClose }: Props) {
 							<div className="mb-2">
 								<p
 									className="mb-1.5 font-pokemon text-zinc-400"
-									style={{ fontSize: "6px", letterSpacing: "0.1em" }}
+									style={{
+										fontSize: "6px",
+										letterSpacing: "0.1em",
+									}}
 								>
 									weak against
 								</p>
-								<div className="flex flex-wrap gap-1">
-									{weak.length === 0 ? (
-										<span
-											className="font-pokemon text-zinc-300"
-											style={{ fontSize: "6px" }}
-										>
-											—
-										</span>
-									) : (
-										weak.map((t) => (
-											<span
-												key={t}
-												className="font-pokemon capitalize text-white"
-												style={{
-													background: `var(--type-${t})`,
-													fontSize: "6px",
-													padding: "2px 7px",
-													borderRadius: "999px",
-												}}
-											>
-												{t} ×2
-											</span>
-										))
-									)}
-								</div>
+
+								<TypeList types={weak} multiplier colorType="weak" />
 							</div>
+
 							<div>
 								<p
 									className="mb-1.5 font-pokemon text-zinc-400"
-									style={{ fontSize: "6px", letterSpacing: "0.1em" }}
+									style={{
+										fontSize: "6px",
+										letterSpacing: "0.1em",
+									}}
 								>
 									strong against
 								</p>
-								<div className="flex flex-wrap gap-1">
-									{strong.length === 0 ? (
-										<span
-											className="font-pokemon text-zinc-300"
-											style={{ fontSize: "6px" }}
-										>
-											—
-										</span>
-									) : (
-										strong.map((t) => (
-											<span
-												key={t}
-												className="font-pokemon capitalize text-white"
-												style={{
-													background: `var(--type-${t})`,
-													fontSize: "6px",
-													padding: "2px 7px",
-													borderRadius: "999px",
-												}}
-											>
-												{t}
-											</span>
-										))
-									)}
-								</div>
+
+								<TypeList types={strong} colorType="strong" />
 							</div>
 						</div>
 
@@ -389,10 +326,14 @@ export function PokemonModal({ pokemon, onClose }: Props) {
 						<div className="p-4 py-3">
 							<p
 								className="mb-2 font-pokemon text-zinc-400"
-								style={{ fontSize: "6px", letterSpacing: "0.1em" }}
+								style={{
+									fontSize: "6px",
+									letterSpacing: "0.1em",
+								}}
 							>
 								EVOLUTION CHAIN
 							</p>
+
 							{evoLoading ? (
 								<span
 									className="font-pokemon text-zinc-400"
@@ -409,19 +350,26 @@ export function PokemonModal({ pokemon, onClose }: Props) {
 								</span>
 							) : (
 								<div className="flex items-center gap-2">
-									{evoChain.map((evo, i) => {
-										const isActive = evo.id === pokemon.id;
-										const sprite = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${evo.id}.png`;
+									{evoChain.map((evolution, index) => {
+										const isActive = evolution.id === pokemon.id;
+										const sprite = getPokemonSpriteUrl(evolution.id);
+
 										return (
-											<div key={evo.id} className="flex items-center gap-2">
-												{i > 0 && (
+											<div
+												key={evolution.id}
+												className="flex items-center gap-2"
+											>
+												{index > 0 && (
 													<span
-														className="font-pokemon text-zinc-400"
-														style={{ fontSize: "7px", flexShrink: 0 }}
+														className="shrink-0 font-pokemon text-zinc-400"
+														style={{
+															fontSize: "7px",
+														}}
 													>
 														→
 													</span>
 												)}
+
 												<div
 													className="flex flex-col items-center gap-1"
 													style={{
@@ -437,13 +385,14 @@ export function PokemonModal({ pokemon, onClose }: Props) {
 												>
 													<img
 														src={sprite}
-														alt={evo.name}
+														alt={evolution.name}
 														style={{
 															width: "36px",
 															height: "36px",
 															imageRendering: "pixelated",
 														}}
 													/>
+
 													<span
 														className="font-pokemon capitalize"
 														style={{
@@ -451,7 +400,7 @@ export function PokemonModal({ pokemon, onClose }: Props) {
 															color: isActive ? typeColor : "#aaa",
 														}}
 													>
-														{evo.name}
+														{evolution.name}
 													</span>
 												</div>
 											</div>
@@ -463,6 +412,42 @@ export function PokemonModal({ pokemon, onClose }: Props) {
 					</div>
 				</div>
 			</div>
+		</div>
+	);
+}
+
+type TypeListProps = {
+	types: Pokemon["types"];
+	multiplier?: boolean;
+	colorType: "weak" | "strong";
+};
+
+function TypeList({ types, multiplier = false }: TypeListProps) {
+	if (types.length === 0) {
+		return (
+			<span className="font-pokemon text-zinc-300" style={{ fontSize: "6px" }}>
+				—
+			</span>
+		);
+	}
+
+	return (
+		<div className="flex flex-wrap gap-1">
+			{types.map((type) => (
+				<span
+					key={type}
+					className="font-pokemon capitalize text-white"
+					style={{
+						background: `var(--type-${type})`,
+						fontSize: "6px",
+						padding: "2px 7px",
+						borderRadius: "999px",
+					}}
+				>
+					{type}
+					{multiplier ? " ×2" : ""}
+				</span>
+			))}
 		</div>
 	);
 }
