@@ -1,11 +1,9 @@
 import { useMemo } from "react";
 
-import type { Pokemon } from "@/shared/lib/pokemon/types";
-import type { PokemonType, SortDirection, SortKey } from "../types/pokedex";
-
 import { filterAndSortPokemon } from "@/features/pokedex/lib/filters";
+import type { Pokemon, PokemonType } from "@/shared/lib/pokemon/types";
 
-export type { SortDirection };
+import type { SortDirection, SortKey } from "../types/pokedex";
 
 export function usePokemonFilters(
 	pokemon: Pokemon[],

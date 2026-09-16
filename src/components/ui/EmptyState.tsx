@@ -7,6 +7,7 @@ export function EmptyState() {
 				viewBox="0 0 72 72"
 				fill="none"
 				className="opacity-35"
+				aria-hidden="true"
 			>
 				<circle
 					cx="36"
@@ -16,6 +17,7 @@ export function EmptyState() {
 					strokeWidth="2.5"
 					className="text-zinc-400"
 				/>
+
 				<line
 					x1="4"
 					y1="36"
@@ -25,6 +27,7 @@ export function EmptyState() {
 					strokeWidth="2.5"
 					className="text-zinc-400"
 				/>
+
 				<circle
 					cx="36"
 					cy="36"
@@ -34,7 +37,9 @@ export function EmptyState() {
 					fill="white"
 					className="text-zinc-400"
 				/>
+
 				<path d="M4 36 A32 32 0 0 1 68 36" fill="white" />
+
 				<path
 					d="M4 36 A32 32 0 0 1 68 36"
 					stroke="currentColor"
@@ -42,6 +47,7 @@ export function EmptyState() {
 					fill="none"
 					className="text-zinc-400"
 				/>
+
 				<text
 					x="36"
 					y="22"
@@ -56,9 +62,10 @@ export function EmptyState() {
 			</svg>
 
 			<div className="flex flex-col items-center gap-2 text-center">
-				<p className="font-pokemon text-[11px] text-zinc-700">pokédex vacía</p>
+				<p className="font-pokemon text-[11px] text-zinc-700">Empty Pokédex</p>
+
 				<p className="font-pokemon text-[9px] text-zinc-400">
-					That Pokémon doesn't exist.
+					That Pokémon doesn&apos;t exist.
 				</p>
 			</div>
 		</div>

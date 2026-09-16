@@ -1,6 +1,7 @@
-import type { Pokemon } from "@/shared/lib/pokemon/types";
-import type { SortDirection, SortKey } from "../types/pokedex";
+import type { Pokemon, PokemonType } from "@/shared/lib/pokemon/types";
 import { getStatTotal } from "@/shared/lib/pokemon/utils";
+
+import type { SortDirection, SortKey } from "../types/pokedex";
 
 function seededRandom(seed: number) {
 	return () => {
@@ -43,7 +44,7 @@ function getSortValue(pokemon: Pokemon, sortKey: SortKey): number | string {
 export function filterPokemon(
 	pokemon: Pokemon[],
 	query: string,
-	typeFilter: Pokemon["types"][number] | "",
+	typeFilter: PokemonType | "",
 ): Pokemon[] {
 	const normalizedQuery = query.toLowerCase().trim();
 
@@ -80,7 +81,7 @@ export function sortPokemon(
 export function filterAndSortPokemon(
 	pokemon: Pokemon[],
 	query: string,
-	typeFilter: Pokemon["types"][number] | "",
+	typeFilter: PokemonType | "",
 	sortKey: SortKey,
 	sortDirection: SortDirection,
 	shuffleSeed: number,

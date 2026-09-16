@@ -1,7 +1,7 @@
 import type { Pokemon } from "@/shared/lib/pokemon/types";
 import { getGeneration } from "@/shared/lib/pokemon/utils";
 
-interface PokemonDetailResponse {
+export interface PokemonDetailResponse {
 	id: number;
 	name: string;
 	height: number;
@@ -28,14 +28,12 @@ export function mapPokemon(detail: PokemonDetailResponse): Pokemon {
 		id: detail.id,
 		name: detail.name,
 		types: detail.types.map(({ type }) => type.name),
-
 		hp: getStat(detail.stats, "hp"),
 		attack: getStat(detail.stats, "attack"),
 		defense: getStat(detail.stats, "defense"),
 		specialAttack: getStat(detail.stats, "special-attack"),
 		specialDefense: getStat(detail.stats, "special-defense"),
 		speed: getStat(detail.stats, "speed"),
-
 		height: detail.height,
 		weight: detail.weight,
 		generation: getGeneration(detail.id),

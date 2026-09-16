@@ -2,14 +2,20 @@ import { useEffect, useMemo, useState } from "react";
 
 import { fetchGen } from "@/shared/lib/pokemon/api";
 import { GEN_RANGES } from "@/shared/lib/pokemon/constants";
-import type { Pokemon } from "@/shared/lib/pokemon/types";
+
+import type { Generation, Pokemon } from "@/shared/lib/pokemon/types";
 
 export function usePokemon(gen: string) {
-	const [cache, setCache] = useState<Record<number, Pokemon[]>>({});
-	const [loadingGens, setLoadingGens] = useState<Set<number>>(new Set());
+	const [cache, setCache] = useState<Record<Generation, Pokemon[]>>(
+		{} as Record<Generation, Pokemon[]>,
+	);
+	const [loadingGens, setLoadingGens] = useState<Set<Generation>>(new Set());
 
-	const generations = useMemo(
-		() => (gen === "" ? Object.keys(GEN_RANGES).map(Number) : [Number(gen)]),
+	const generations = useMemo<Generation[]>(
+		() =>
+			gen === ""
+				? (Object.keys(GEN_RANGES).map(Number) as Generation[])
+				: [Number(gen) as Generation],
 		[gen],
 	);
 

@@ -1,31 +1,9 @@
 import { GEN_RANGES, POKEAPI_URL } from "@/shared/lib/pokemon/constants";
-import { mapPokemon } from "@/shared/lib/pokemon/mappers";
-import type { Pokemon } from "@/shared/lib/pokemon/types";
-
-interface PokemonListResponse {
-	results: {
-		name: string;
-		url: string;
-	}[];
-}
-
-interface PokemonDetailResponse {
-	id: number;
-	name: string;
-	height: number;
-	weight: number;
-	types: {
-		type: {
-			name: Pokemon["types"][number];
-		};
-	}[];
-	stats: {
-		base_stat: number;
-		stat: {
-			name: string;
-		};
-	}[];
-}
+import {
+	mapPokemon,
+	type PokemonDetailResponse,
+} from "@/shared/lib/pokemon/mappers";
+import type { Generation, Pokemon } from "@/shared/lib/pokemon/types";
 
 interface PokemonSpeciesResponse {
 	evolution_chain: {
@@ -50,14 +28,48 @@ export interface Evolution {
 	name: string;
 }
 
-async function fetchJson<T>(url: string): Promise<T> {
-	const response = await fetch(url);
+const FETCH_CONCURRENCY = 10;
 
-	if (!response.ok) {
-		throw new Error(`PokeAPI request failed: ${response.status}`);
+let activeRequests = 0;
+const requestQueue: (() => void)[] = [];
+
+async function acquireRequestSlot(): Promise<void> {
+	if (activeRequests < FETCH_CONCURRENCY) {
+		activeRequests += 1;
+		return;
 	}
 
-	return response.json() as Promise<T>;
+	await new Promise<void>((resolve) => {
+		requestQueue.push(resolve);
+	});
+
+	activeRequests += 1;
+}
+
+function releaseRequestSlot(): void {
+	activeRequests -= 1;
+
+	const next = requestQueue.shift();
+
+	if (next) {
+		next();
+	}
+}
+
+async function fetchJson<T>(url: string): Promise<T> {
+	await acquireRequestSlot();
+
+	try {
+		const response = await fetch(url);
+
+		if (!response.ok) {
+			throw new Error(`PokeAPI request failed: ${response.status}`);
+		}
+
+		return (await response.json()) as T;
+	} finally {
+		releaseRequestSlot();
+	}
 }
 
 async function fetchPokemon(id: number): Promise<Pokemon> {
@@ -68,14 +80,8 @@ async function fetchPokemon(id: number): Promise<Pokemon> {
 	return mapPokemon(detail);
 }
 
-export async function fetchGen(gen: number): Promise<Pokemon[]> {
-	const range = GEN_RANGES[gen as keyof typeof GEN_RANGES];
-
-	if (!range) {
-		throw new Error(`Unknown Pokémon generation: ${gen}`);
-	}
-
-	const [start, end] = range;
+export async function fetchGen(gen: Generation): Promise<Pokemon[]> {
+	const [start, end] = GEN_RANGES[gen];
 
 	const ids = Array.from(
 		{ length: end - start + 1 },
@@ -83,18 +89,6 @@ export async function fetchGen(gen: number): Promise<Pokemon[]> {
 	);
 
 	return Promise.all(ids.map(fetchPokemon));
-}
-
-export async function getPokemonList(): Promise<Pokemon[]> {
-	const { results } = await fetchJson<PokemonListResponse>(
-		`${POKEAPI_URL}/pokemon?limit=1025`,
-	);
-
-	return Promise.all(
-		results.map(({ url }) =>
-			fetchJson<PokemonDetailResponse>(url).then(mapPokemon),
-		),
-	);
 }
 
 function getIdFromUrl(url: string): number {

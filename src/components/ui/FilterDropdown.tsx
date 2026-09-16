@@ -12,7 +12,7 @@ type Option = {
 type FilterDropdownProps = {
 	label: string;
 	value: string;
-	options: Option[];
+	options: readonly Option[];
 	onChange: (value: string) => void;
 	color?: string;
 	showTypeIcons?: boolean;
@@ -31,8 +31,11 @@ export function FilterDropdown({
 }: FilterDropdownProps) {
 	const [open, setOpen] = useState(false);
 	const ref = useRef<HTMLDivElement>(null);
+
 	const selected = options.find((option) => option.value === value);
 	const isActive = value !== "";
+	const selectedValue = selected?.value ?? "";
+	const selectedType = isPokemonType(selectedValue) ? selectedValue : null;
 
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
@@ -46,14 +49,13 @@ export function FilterDropdown({
 		return () => document.removeEventListener("mousedown", handleClickOutside);
 	}, []);
 
-	const selectedValue = selected?.value ?? "";
-	const selectedType = isPokemonType(selectedValue) ? selectedValue : null;
-
 	return (
 		<div ref={ref} className="relative">
 			<button
 				type="button"
 				onClick={() => setOpen((previous) => !previous)}
+				aria-expanded={open}
+				aria-haspopup="true"
 				className="flex items-center gap-2 rounded-lg border px-3 py-2 font-pokemon text-[7px] transition"
 				style={
 					isActive && color

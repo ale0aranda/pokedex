@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 
+import { STAT_CONFIG } from "@/features/pokedex/lib/stats";
 import { fetchEvolutionChain } from "@/shared/lib/pokemon/api";
 import {
 	getPokemonArtworkUrl,
 	getPokemonSpriteUrl,
 } from "@/shared/lib/pokemon/assets";
-import { getTypeEffectiveness } from "@/shared/lib/pokemon/type-chart";
 import { MAX_BASE_STAT } from "@/shared/lib/pokemon/constants";
+import { getTypeEffectiveness } from "@/shared/lib/pokemon/type-chart";
 import type { Pokemon } from "@/shared/lib/pokemon/types";
-import { STAT_CONFIG } from "@/features/pokedex/lib/stats";
 
 type Props = {
 	pokemon: Pokemon | null;
@@ -100,7 +100,7 @@ export function PokemonModal({ pokemon, onClose }: Props) {
 				onClick={(event) => event.stopPropagation()}
 				role="dialog"
 				aria-modal="true"
-				aria-label={`${pokemon.name} details`}
+				aria-labelledby="pokemon-modal-title"
 			>
 				<button
 					type="button"
@@ -150,6 +150,7 @@ export function PokemonModal({ pokemon, onClose }: Props) {
 						</span>
 
 						<h2
+							id="pokemon-modal-title"
 							className="font-pokemon capitalize"
 							style={{
 								fontSize: "11px",
@@ -297,7 +298,7 @@ export function PokemonModal({ pokemon, onClose }: Props) {
 									weak against
 								</p>
 
-								<TypeList types={weak} multiplier colorType="weak" />
+								<TypeList types={weak} multiplier />
 							</div>
 
 							<div>
@@ -311,7 +312,7 @@ export function PokemonModal({ pokemon, onClose }: Props) {
 									strong against
 								</p>
 
-								<TypeList types={strong} colorType="strong" />
+								<TypeList types={strong} />
 							</div>
 						</div>
 
@@ -419,7 +420,6 @@ export function PokemonModal({ pokemon, onClose }: Props) {
 type TypeListProps = {
 	types: Pokemon["types"];
 	multiplier?: boolean;
-	colorType: "weak" | "strong";
 };
 
 function TypeList({ types, multiplier = false }: TypeListProps) {

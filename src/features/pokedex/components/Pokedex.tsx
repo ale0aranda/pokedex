@@ -1,21 +1,23 @@
 import { useState } from "react";
 
+import { EmptyState } from "@/components/ui/EmptyState";
+import { FilterDropdown } from "@/components/ui/FilterDropdown";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { SearchBar } from "@/components/ui/SearchBar";
+
+import { PokemonCard } from "@/features/pokedex/components/PokemonCard";
+import { PokemonModal } from "@/features/pokedex/components/PokemonModal";
 import { usePokemon } from "@/features/pokedex/hooks/usePokemon";
-import {
-	type SortDirection,
-	usePokemonFilters,
-} from "@/features/pokedex/hooks/usePokemonFilters";
-import type { PokemonType, SortKey } from "@/features/pokedex/types/pokedex";
+import { usePokemonFilters } from "@/features/pokedex/hooks/usePokemonFilters";
+import type { SortDirection } from "@/features/pokedex/types/pokedex";
+import type { SortKey } from "@/features/pokedex/types/pokedex";
+
 import {
 	ALL_TYPES,
 	GEN_RANGES,
 	SORT_OPTIONS,
 } from "@/shared/lib/pokemon/constants";
-import { PokemonCard } from "@/features/pokedex/components/PokemonCard";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { FilterDropdown } from "@/components/ui/FilterDropdown";
-import { LoadingState } from "@/components/ui/LoadingState";
-import { SearchBar } from "@/components/ui/SearchBar";
+import type { Pokemon, PokemonType } from "@/shared/lib/pokemon/types";
 
 export default function Pokedex() {
 	const [gen, setGen] = useState("");
@@ -24,6 +26,7 @@ export default function Pokedex() {
 	const [sortKey, setSortKey] = useState<SortKey>("id");
 	const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 	const [shuffleSeed, setShuffleSeed] = useState(0);
+	const [selectedPokemon, setSelectedPokemon] = useState<Pokemon | null>(null);
 
 	const { pokemon: allPokemon, loading: isLoading } = usePokemon(gen);
 
@@ -194,10 +197,19 @@ export default function Pokedex() {
 			) : (
 				<div className="flex flex-col gap-2 sm:grid sm:grid-cols-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
 					{filtered.map((pokemon) => (
-						<PokemonCard key={pokemon.id} p={pokemon} />
+						<PokemonCard
+							key={pokemon.id}
+							pokemon={pokemon}
+							onClick={() => setSelectedPokemon(pokemon)}
+						/>
 					))}
 				</div>
 			)}
+
+			<PokemonModal
+				pokemon={selectedPokemon}
+				onClose={() => setSelectedPokemon(null)}
+			/>
 		</div>
 	);
 }

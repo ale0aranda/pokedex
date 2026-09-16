@@ -6,15 +6,19 @@ type Props = {
 export function SearchBar({ value, onChange }: Props) {
 	return (
 		<div className="relative flex-1 sm:max-w-xs">
+			<label htmlFor="pokemon-search" className="sr-only">
+				Search Pokémon
+			</label>
+
 			<svg
-				className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
+				className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400"
 				width="12"
 				height="12"
 				viewBox="0 0 12 12"
 				fill="none"
+				aria-hidden="true"
 			>
 				<circle cx="5" cy="5" r="3.5" stroke="currentColor" strokeWidth="1.5" />
-
 				<path
 					d="M8 8L10.5 10.5"
 					stroke="currentColor"
@@ -24,10 +28,11 @@ export function SearchBar({ value, onChange }: Props) {
 			</svg>
 
 			<input
+				id="pokemon-search"
 				type="search"
 				placeholder="Search pokémon..."
 				value={value}
-				onChange={(e) => onChange(e.target.value)}
+				onChange={(event) => onChange(event.target.value)}
 				className="w-full rounded-lg border border-zinc-200 bg-white py-2 pl-8 pr-3 font-pokemon text-[7px] text-zinc-700 placeholder:text-zinc-400 focus:border-zinc-400 focus:outline-none"
 			/>
 		</div>
