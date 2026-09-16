@@ -6,7 +6,7 @@ import { defineConfig } from "astro/config";
 
 // https://astro.build/config
 export default defineConfig({
-	site: "https://alejaranda.github.io",
+	site: "https://ale0aranda.github.io",
 	base: "/pokedex",
 	vite: {
 		plugins: [tailwindcss()],

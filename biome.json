@@ -1,28 +1,35 @@
 {
 	"$schema": "https://biomejs.dev/schemas/2.5.13/schema.json",
-	"extends": ["@ale0aranda/rules/biome/web"],
-	"vcs": {
-		"enabled": true,
-		"clientKind": "git",
-		"useIgnoreFile": true
-	},
-	"files": {
-		"includes": ["**", "!!**/dist"]
-	},
+	"extends": ["@ale0aranda/rules/biome/base"],
 	"formatter": {
 		"enabled": true,
 		"indentStyle": "tab"
 	},
-	"linter": {
-		"enabled": true,
-		"rules": {
-			"preset": "recommended"
-		}
-	},
 	"javascript": {
 		"formatter": {
+			"attributePosition": "auto",
+			"operatorLinebreak": "after",
 			"quoteStyle": "double",
+			"jsxQuoteStyle": "double",
 			"trailingCommas": "all"
+		}
+	},
+	"linter": {
+		"rules": {
+			"nursery": {
+				"noTailwindArbitraryValue": "off",
+				"useSortedClasses": "off"
+			}
+		}
+	},
+	"json": {
+		"formatter": {
+			"indentStyle": "tab"
+		}
+	},
+	"css": {
+		"formatter": {
+			"quoteStyle": "double"
 		}
 	},
 	"overrides": [
@@ -54,10 +61,9 @@
 		}
 	],
 	"assist": {
-		"enabled": true,
 		"actions": {
 			"source": {
-				"organizeImports": "on"
+				"organizeImports": "off"
 			}
 		}
 	}
